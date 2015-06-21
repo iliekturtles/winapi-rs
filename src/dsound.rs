@@ -41,6 +41,17 @@ pub struct DSBCAPS {
 pub type LPDSBCAPS = *mut DSBCAPS;
 
 #[repr(C)] #[derive(Clone, Copy, Debug)]
+pub struct DSEFFECTDESC {
+    pub dwSize: ::DWORD,
+    pub dwFlags: ::DWORD,
+    pub guidDSFXClass: ::GUID,
+    pub dwReserved1: ::DWORD_PTR,
+    pub dwReserved2: ::DWORD_PTR,
+}
+pub type LPDSEFFECTDESC = *mut DSEFFECTDESC;
+pub type LPCDSEFFECTDESC = *const DSEFFECTDESC;
+
+#[repr(C)] #[derive(Clone, Copy, Debug)]
 pub struct DSBUFFERDESC {
     pub dwSize: ::DWORD,
     pub dwFlags: ::DWORD,
@@ -49,7 +60,50 @@ pub struct DSBUFFERDESC {
     pub lpwfxFormat: ::LPWAVEFORMATEX,
     pub guid3DAlgorithm: ::GUID,
 }
+pub type LPDSBUFFERDESC = *mut DSBUFFERDESC;
 pub type LPCDSBUFFERDESC = *const DSBUFFERDESC;
+
+#[repr(C)] #[derive(Clone, Copy, Debug)]
+pub struct DSCBUFFERDESC {
+    pub dwSize: ::DWORD,
+    pub dwFlags: ::DWORD,
+    pub dwBufferBytes: ::DWORD,
+    pub dwReserved: ::DWORD,
+    pub lpwfxFormat: ::LPWAVEFORMATEX,
+    pub dwFXCount: ::DWORD,
+    pub lpDSCFXDesc: ::LPDSCEFFECTDESC,
+}
+pub type LPDSCBUFFERDESC = *mut DSCBUFFERDESC;
+pub type LPCDSCBUFFERDESC = *const DSCBUFFERDESC;
+
+RIDL!(
+interface IDirectSound(IDirectSoundVtbl): IUnknown(IUnknownVtbl)
+{
+    fn CreateSoundBuffer(
+        &mut self, pcDSBufferDesc: ::LPCDSBUFFERDESC, ppDSBuffer: *mut ::LPDIRECTSOUNDBUFFER,
+        pUnkOuter: ::LPUNKNOWN
+    ) -> ::HRESULT,
+    fn GetCaps(&mut self, pDSCaps: ::LPDSCAPS) -> ::HRESULT,
+    fn DuplicateSoundBuffer(
+        &mut self, pDSBufferOriginal: LPDIRECTSOUNDBUFFER,
+        ppDSBufferDuplicate: *mut ::LPDIRECTSOUNDBUFFER
+    ) -> ::HRESULT,
+    fn SetCooperativeLevel(&mut self, hWnd: ::HWND, dwLevel: ::DWORD) -> ::HRESULT,
+    fn Compact(&mut self) -> ::HRESULT,
+    fn GetSpeakerConfig(&mut self, pdwSpeakerConfig: ::LPDWORD) -> ::HRESULT,
+    fn SetSpeakerConfig(&mut self, dwSpeakerConfig: ::DWORD) -> ::HRESULT,
+    fn Initialize(&mut self, pcGuidDevice: ::LPCGUID) -> ::HRESULT
+}
+);
+pub type LPDIRECTSOUND = *mut IDirectSound;
+
+RIDL!(
+interface IDirectSound8(IDirectSound8Vtbl): IDirectSound(IDirectSoundVtbl)
+{
+    fn VerifyCertification(&mut self, ldwCertified: ::LPDWORD) -> ::HRESULT
+}
+);
+pub type LPDIRECTSOUND8 = *mut IDirectSound8;
 
 RIDL!(
 interface IDirectSoundBuffer(IDirectSoundBufferVtbl): IUnknown(IUnknownVtbl) {
@@ -90,25 +144,39 @@ interface IDirectSoundBuffer(IDirectSoundBufferVtbl): IUnknown(IUnknownVtbl) {
 pub type LPDIRECTSOUNDBUFFER = *mut IDirectSoundBuffer;
 
 RIDL!(
-interface IDirectSound(IDirectSoundVtbl): IUnknown(IUnknownVtbl)
-{
-    fn CreateSoundBuffer(
-        &mut self, pcDSBufferDesc: ::LPCDSBUFFERDESC, ppDSBuffer: *mut ::LPDIRECTSOUNDBUFFER,
-        pUnkOuter: ::LPUNKNOWN
+interface IDirectSoundBuffer8(IDirectSoundBuffer8Vtbl): IDirectSoundBuffer(IDirectSoundBufferVtbl) {
+    fn SetFX(
+        &mut self, dwEffectsCount: ::DWORD, pDSFXDesc: ::LPDSEFFECTDESC, pdwResultCodes: ::LPDWORD
     ) -> ::HRESULT,
-    fn GetCaps(&mut self, pDSCaps: ::LPDSCAPS) -> ::HRESULT,
-    fn DuplicateSoundBuffer(
-        &mut self, pDSBufferOriginal: LPDIRECTSOUNDBUFFER,
-        ppDSBufferDuplicate: *mut ::LPDIRECTSOUNDBUFFER
+    fn AcquireResources(
+        &mut self, dwFlags: ::DWORD, dwEffectsCount: ::DWORD, pdwResultCodes: ::LPDWORD
     ) -> ::HRESULT,
-    fn SetCooperativeLevel(&mut self, hWnd: ::HWND, dwLevel: ::DWORD) -> ::HRESULT,
-    fn Compact(&mut self) -> ::HRESULT,
-    fn GetSpeakerConfig(&mut self, pdwSpeakerConfig: ::LPDWORD) -> ::HRESULT,
-    fn SetSpeakerConfig(&mut self, dwSpeakerConfig: ::DWORD) -> ::HRESULT,
+    fn GetObjectInpath(
+        &mut self, rguidObject: ::REFGUID, dwIndex: ::DWORD, rguidInterface: ::REFGUID,
+        ppObject: *mut ::LPVOID
+    ) -> ::HRESULT
+}
+);
+pub type LPDIRECTSOUNDBUFFER8 = *mut IDirectSoundBuffer8;
+
+RIDL!(
+interface IDirectSoundCapture(IDirectSoundCaptureVtbl): IUnknown(IUnknownVtbl) {
+    fn CreateCaptureBuffer(
+        &mut self, pcDSCBufferDesc: ::LPCDSCBUFFERDESC,
+        ppDSCBuffer: *mut ::LPDIRECTSOUNDCAPTUREBUFFER, pUnkOuter: LPUNKNOWN
+    ) -> ::HRESULT,
+    fn GetCaps(&mut self, pDSCCaps: ::LPDSCCAPS) -> ::HRESULT,
     fn Initialize(&mut self, pcGuidDevice: ::LPCGUID) -> ::HRESULT
 }
 );
-pub type LPDIRECTSOUND = *mut IDirectSound;
+pub type LPDIRECTSOUNDCAPTURE = *mut IDirectSoundCapture;
+
+pub type LPDSENUMCALLBACKA = Option<unsafe extern "system" fn(
+    ::LPGUID, ::LPCSTR, ::LPCSTR, ::LPVOID
+) -> ::BOOL>;
+pub type LPDSENUMCALLBACKW = Option<unsafe extern "system" fn(
+    ::LPGUID, ::LPCWSTR, ::LPCWSTR, ::LPVOID
+) -> ::BOOL>;
 
 pub const DS_OK: ::HRESULT = ::S_OK;
 pub const DSERR_GENERIC: ::HRESULT = ::E_FAIL;
